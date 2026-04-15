@@ -52,7 +52,14 @@ export function createLifecycleRouter(pool, vectr) {
   });
 
   // POST /prune — delete all expired context blocks
+  // repair-radiant-02: return the MP-TOOL-1 R7 tool_call_response payload shape
+  // so MCP-Router's _callHttp (which wraps the response body as `result`) yields
+  // {result:{status:"SUCCESS",data,tool,elapsed_ms,meta}} — the conformance-scan
+  // classifier reads result.status and expects a value from the closed enum.
+  // Pre-fix shape was {status:"pruned", deleted_count, deleted_ids} which collided
+  // with the classifier's result.status probe and yielded UNKNOWN_STATUS=pruned.
   router.post('/prune', async (req, res) => {
+    const startTime = Date.now();
     try {
       const result = await pool.query(`
         DELETE FROM knowledge_blocks
@@ -63,9 +70,14 @@ export function createLifecycleRouter(pool, vectr) {
       `);
 
       res.json({
-        status: 'pruned',
-        deleted_count: result.rows.length,
-        deleted_ids: result.rows.map(r => r.id),
+        status: 'SUCCESS',
+        data: {
+          deleted_count: result.rows.length,
+          deleted_ids: result.rows.map(r => r.id),
+        },
+        tool: 'radiant__prune_expired',
+        elapsed_ms: Date.now() - startTime,
+        meta: { transport: 'http', organ: 'radiant' },
       });
     } catch (err) {
       res.status(500).json({ error: err.message });

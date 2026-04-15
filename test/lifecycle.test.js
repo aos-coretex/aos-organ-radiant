@@ -76,9 +76,14 @@ describe('Lifecycle routes', () => {
     const { status, data } = await request(app, 'POST', '/prune');
 
     assert.equal(status, 200);
-    assert.equal(data.status, 'pruned');
-    assert.equal(data.deleted_count, 2);
-    assert.deepEqual(data.deleted_ids, ['expired-1', 'expired-2']);
+    // repair-radiant-02: R7 tool_call_response payload shape.
+    assert.equal(data.status, 'SUCCESS');
+    assert.equal(data.tool, 'radiant__prune_expired');
+    assert.equal(data.data.deleted_count, 2);
+    assert.deepEqual(data.data.deleted_ids, ['expired-1', 'expired-2']);
+    assert.equal(data.meta.transport, 'http');
+    assert.equal(data.meta.organ, 'radiant');
+    assert.ok(typeof data.elapsed_ms === 'number');
   });
 
   it('POST /merge performs atomic N→1 merge', async () => {
