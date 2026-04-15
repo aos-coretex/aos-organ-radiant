@@ -17,6 +17,7 @@ import { createLifecycleRouter } from './routes/lifecycle.js';
 import { createSearchRouter } from './routes/search.js';
 import { createStatsRouter } from './routes/stats.js';
 import { createMessageHandler } from './handlers/messages.js';
+import { createToolHandler } from './tool-handler.js';
 import { runPhase1 } from './dream/phase1.js';
 import { runPhase2 } from './dream/phase2.js';
 
@@ -104,6 +105,20 @@ const organ = await createOrgan({
   },
 
   onMessage: createMessageHandler(pool, vectr, triggerDream),
+
+  // Tool-call health gate intentionally checks ONLY the DB. Vectr degradation
+  // is treated as graceful (embeddings become null) rather than fail-closed,
+  // because several Radiant tools (query_*, promote, prune_expired, update_ttl,
+  // dream_stats) don't require embeddings. Tools that do hit vectr surface
+  // EMBEDDING_UNAVAILABLE via TOOL_ERROR instead of ORGAN_DEGRADED.
+  toolCallHandler: createToolHandler(
+    { pool, vectr, getDreamState },
+    {
+      healthCheck: async () => ({
+        db: await checkDb(pool),
+      }),
+    }
+  ),
 
   subscriptions: [
     { event_type: 'dream_trigger' },
