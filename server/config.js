@@ -18,7 +18,7 @@ export const config = {
     max: 5,
   },
 
-  vectrUrl: process.env.LLM_OPS_EMBEDDING_URL || 'http://127.0.0.1:3901',
+  vectrUrl: process.env.LLM_OPS_EMBEDDING_URL || 'http://127.0.0.1:4001',
   vectrTimeoutMs: 5000,
 
   dreamEnabled: process.env.DREAM_ENABLED === 'true',

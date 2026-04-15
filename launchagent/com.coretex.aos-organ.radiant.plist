@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.coretex.aos-organ.radiant</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/bash</string>
+        <string>/Library/AI/AI-Infra-MDvaults/MDvault-LLM-Ops/100-Scripts/01-Scripts-LLM-Ops/00-bootstrap-scripts/organ-launcher/scr-bash-llm-ops-organ-launcher.sh</string>
+        <string>radiant</string>
+    </array>
+    <key>WorkingDirectory</key>
+    <string>/Library/AI/AI-AOS/AOS-organ-dev/AOS-organ-radiant/AOS-organ-radiant-src</string>
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>NODE_ENV</key>
+        <string>development</string>
+        <key>ORGAN_TIER</key>
+        <string>aos</string>
+        <key>RADIANT_PORT</key>
+        <string>4006</string>
+    </dict>
+    <key>RunAtLoad</key>
+    <false/>
+    <key>KeepAlive</key>
+    <true/>
+    <key>StandardOutPath</key>
+    <string>/Library/AI/AI-Infra-MDvaults/MDvault-LLM-Ops/210-Log/organ-logs/radiant-stdout.log</string>
+    <key>StandardErrorPath</key>
+    <string>/Library/AI/AI-Infra-MDvaults/MDvault-LLM-Ops/210-Log/organ-logs/radiant-stderr.log</string>
+</dict>
+</plist>
