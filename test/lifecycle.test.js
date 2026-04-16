@@ -161,8 +161,14 @@ describe('Lifecycle routes', () => {
     });
 
     assert.equal(status, 200);
-    assert.equal(data.status, 'updated');
-    assert.equal(data.updated_count, 2);
-    assert.equal(data.blocks.length, 2);
+    // R7 envelope (c2a-http-route-03)
+    assert.equal(data.status, 'SUCCESS');
+    assert.equal(data.tool, 'radiant__update_ttl');
+    assert.equal(data.meta.transport, 'http');
+    assert.equal(data.meta.organ, 'radiant');
+    assert.ok(typeof data.elapsed_ms === 'number');
+    // Payload
+    assert.equal(data.data.updated_count, 2);
+    assert.equal(data.data.blocks.length, 2);
   });
 });

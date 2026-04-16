@@ -159,7 +159,14 @@ export function createLifecycleRouter(pool, vectr) {
   });
 
   // PATCH /context/ttl — update TTL on context blocks
+  // c2a-http-route-03: return the MP-TOOL-1 R7 tool_call_response payload shape
+  // so MCP-Router's _callHttp (which wraps the response body as `result`) yields
+  // {result:{status:"SUCCESS",data,tool,elapsed_ms,meta}} — the conformance-scan
+  // classifier reads result.status and expects a value from the closed enum.
+  // Pre-fix shape was {status:"updated", updated_count, blocks, not_found}
+  // which collided with the classifier's result.status probe.
   router.patch('/context/ttl', async (req, res) => {
+    const startTime = Date.now();
     try {
       const { block_ids, expires_in_days } = req.body;
 
@@ -188,10 +195,15 @@ export function createLifecycleRouter(pool, vectr) {
       const notFound = block_ids.length - result.rows.length;
 
       res.json({
-        status: 'updated',
-        updated_count: result.rows.length,
-        blocks: result.rows.map(r => ({ id: r.id, new_expires_at: r.expires_at })),
-        not_found: notFound,
+        status: 'SUCCESS',
+        data: {
+          updated_count: result.rows.length,
+          blocks: result.rows.map(r => ({ id: r.id, new_expires_at: r.expires_at })),
+          not_found: notFound,
+        },
+        tool: 'radiant__update_ttl',
+        elapsed_ms: Date.now() - startTime,
+        meta: { transport: 'http', organ: 'radiant' },
       });
     } catch (err) {
       res.status(500).json({ error: err.message });
