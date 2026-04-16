@@ -7,7 +7,8 @@
  */
 
 import { createOrgan } from '@coretex/organ-boot';
-import { createLLMClient } from '@coretex/organ-boot/llm-client';
+import { createLoader } from '@coretex/organ-boot/llm-settings-loader';
+import { initializeUsageAttribution } from '@coretex/organ-boot/usage-attribution';
 import { config } from './config.js';
 import { createPool, verifySchema, checkDb } from './db/pool.js';
 import { createVectrClient } from './vectr.js';
@@ -79,14 +80,29 @@ function startDreamTimer(pool, vectr, llmClient) {
 const pool = createPool(config.db);
 const vectr = createVectrClient(config.vectrUrl, config.vectrTimeoutMs);
 
-// LLM client for Phase 2 dream consolidation
-const dreamerLLM = createLLMClient({
-  agentName: 'radiant-dreamer',
-  defaultModel: 'claude-sonnet-4-6',
-  defaultProvider: 'anthropic',
-  apiKeyEnvVar: 'ANTHROPIC_API_KEY',
-  maxTokens: 2048,
+// LLM settings loader (MP-CONFIG-1 R6 migration — l9m-6).
+// Reads `<settingsRoot>/60-Radiant/radiant-organ-{default,radiant-dreamer}-llm-settings.yaml`.
+const llmLoader = createLoader({
+  organNumber: 60,
+  organName: 'radiant',
+  settingsRoot: config.settingsRoot,
 });
+
+// MP-CONFIG-1 R9 — register the process-default usage writer.
+initializeUsageAttribution({ organName: 'Radiant' });
+
+function buildLlmClient(agentName) {
+  const { config: resolved, chat } = llmLoader.resolveWithCascade(agentName);
+  const apiKeyEnv = resolved.apiKeyEnvVar || 'ANTHROPIC_API_KEY';
+  return {
+    chat,
+    isAvailable: () => Boolean(process.env[apiKeyEnv]),
+    getUsage: () => ({ agent: resolved.agentName, model: resolved.defaultModel, provider: resolved.defaultProvider }),
+  };
+}
+
+// LLM client for Phase 2 dream consolidation — loader-derived, cascade-wrapped.
+const dreamerLLM = buildLlmClient('radiant-dreamer');
 
 const triggerDream = (phase) => runDreamCycle(pool, vectr, dreamerLLM, phase);
 
@@ -136,6 +152,8 @@ const organ = await createOrgan({
   introspectCheck: async () => ({
     dream_state: getDreamState(),
     llm_usage: dreamerLLM.getUsage(),
+    // MP-CONFIG-1 R6 — flat per bug #9; consumed by Axon aggregator R8.
+    llm: llmLoader.introspect(),
   }),
 
   onStartup: async () => {
